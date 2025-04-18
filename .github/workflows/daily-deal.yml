@@ -1,5 +1,6 @@
 name: DRG Daily Deal
 
+# Run manually + daily at 00:05 UTC
 on:
   workflow_dispatch:
   schedule:
