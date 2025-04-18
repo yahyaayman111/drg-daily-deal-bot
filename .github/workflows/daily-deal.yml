@@ -1,0 +1,37 @@
+name: DRG Daily Deal
+
+on:
+  schedule:
+    - cron: '5 0 * * *'    # every day at 00:05 UTC
+
+jobs:
+  post-deal:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Today’s Deal JSON
+        id: fetch
+        run: |
+          DATE=$(date -u +'%Y-%m-%d')
+          URL="https://doublexp.net/static/json/bulkmissions/${DATE}.json"
+          RESPONSE=$(curl -s $URL)
+          echo "RESPONSE=$RESPONSE" >> $GITHUB_ENV
+
+      - name: Parse Deal Fields
+        id: parse
+        run: |
+          jq -r '.dailyDeal.DealType'    <<<"$RESPONSE" > deal_type.txt
+          jq -r '.dailyDeal.ResourceAmount' <<<"$RESPONSE" > deal_amt.txt
+          jq -r '.dailyDeal.Resource'     <<<"$RESPONSE" > deal_res.txt
+          jq -r '.dailyDeal.Credits'      <<<"$RESPONSE" > deal_price.txt
+          jq -r '.dailyDeal.ChangePercent' <<<"$RESPONSE" > deal_chg.txt
+
+      - name: Post to Discord
+        uses: bellingcat/discord-webhook@v2
+        with:
+          webhook-url: https://discordapp.com/api/webhooks/1362638254439927859/MfZ5Nd8bs_KDLd2LZlGmzSfUVsBSSE1vkZEVF9K-5NQfIgk6ujUUO1SwZVi2AoFC-htP
+          content: |
+            **🎉 Deep Rock Galactic Daily Deal**
+            • **Type:** $(cat deal_type.txt)
+            • **Offer:** $(cat deal_amt.txt) × $(cat deal_res.txt)
+            • **Price:** $(cat deal_price.txt) credits
+            • **Change:** $(cat deal_chg.txt) %
