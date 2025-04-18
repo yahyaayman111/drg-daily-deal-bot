@@ -1,6 +1,5 @@
 name: DRG Daily Deal
 
-# Run manually + daily at 00:05 UTC
 on:
   workflow_dispatch:
   schedule:
@@ -15,16 +14,15 @@ jobs:
         run: |
           DATE=$(date -u +'%Y-%m-%d')
           URL="https://doublexp.net/static/json/bulkmissions/${DATE}.json"
-          # Download and save JSON to a file
           curl -s $URL -o deal.json
 
       - name: Parse Deal Fields
         run: |
-          jq -r '.dailyDeal.DealType'      deal.json > deal_type.txt
-          jq -r '.dailyDeal.ResourceAmount' deal.json > deal_amt.txt
-          jq -r '.dailyDeal.Resource'      deal.json > deal_res.txt
-          jq -r '.dailyDeal.Credits'       deal.json > deal_price.txt
-          jq -r '.dailyDeal.ChangePercent' deal.json > deal_chg.txt
+          jq -r '.dailyDeal.DealType'        deal.json > deal_type.txt
+          jq -r '.dailyDeal.ResourceAmount'  deal.json > deal_amt.txt
+          jq -r '.dailyDeal.Resource'        deal.json > deal_res.txt
+          jq -r '.dailyDeal.Credits'         deal.json > deal_price.txt
+          jq -r '.dailyDeal.ChangePercent'   deal.json > deal_chg.txt
 
       - name: Post to Discord via curl
         run: |
