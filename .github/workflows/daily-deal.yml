@@ -1,39 +1,54 @@
 name: DRG Daily Deal
 
+# Manual runs + daily at 00:05 UTC
 on:
-  workflow_dispatch:    # ← allows manual runs
+  workflow_dispatch:
   schedule:
     - cron: '5 0 * * *'
-
 
 jobs:
   post-deal:
     runs-on: ubuntu-latest
+
     steps:
       - name: Fetch Today’s Deal JSON
         id: fetch
         run: |
+          # Get today's date in YYYY-MM-DD
           DATE=$(date -u +'%Y-%m-%d')
           URL="https://doublexp.net/static/json/bulkmissions/${DATE}.json"
+          # Download the JSON
           RESPONSE=$(curl -s $URL)
+          # Expose it to subsequent steps
           echo "RESPONSE=$RESPONSE" >> $GITHUB_ENV
 
       - name: Parse Deal Fields
         id: parse
         run: |
-          jq -r '.dailyDeal.DealType'    <<<"$RESPONSE" > deal_type.txt
-          jq -r '.dailyDeal.ResourceAmount' <<<"$RESPONSE" > deal_amt.txt
+          # Extract the fields we need
+          jq -r '.dailyDeal.DealType'     <<<"$RESPONSE" > deal_type.txt
+          jq -r '.dailyDeal.ResourceAmount'<<<"$RESPONSE" > deal_amt.txt
           jq -r '.dailyDeal.Resource'     <<<"$RESPONSE" > deal_res.txt
           jq -r '.dailyDeal.Credits'      <<<"$RESPONSE" > deal_price.txt
-          jq -r '.dailyDeal.ChangePercent' <<<"$RESPONSE" > deal_chg.txt
+          jq -r '.dailyDeal.ChangePercent'<<<"$RESPONSE" > deal_chg.txt
 
-      - name: Post to Discord
-        uses: bellingcat/discord-webhook@v2
-        with:
-          webhook-url: https://discordapp.com/api/webhooks/1362638254439927859/MfZ5Nd8bs_KDLd2LZlGmzSfUVsBSSE1vkZEVF9K-5NQfIgk6ujUUO1SwZVi2AoFC-htP
-          content: |
-            **🎉 Deep Rock Galactic Daily Deal**
-            • **Type:** $(cat deal_type.txt)
-            • **Offer:** $(cat deal_amt.txt) × $(cat deal_res.txt)
-            • **Price:** $(cat deal_price.txt) credits
-            • **Change:** $(cat deal_chg.txt) %
+      - name: Post to Discord via curl
+        run: |
+          # Read parsed values
+          read -r TYPE   < deal_type.txt
+          read -r AMT    < deal_amt.txt
+          read -r RES    < deal_res.txt
+          read -r PRICE  < deal_price.txt
+          read -r CHANGE < deal_chg.txt
+
+          # Build the message payload
+          CONTENT="**🎉 Deep Rock Galactic Daily Deal**\n\
+• **Type:** $TYPE\n\
+• **Offer:** $AMT × $RES\n\
+• **Price:** $PRICE credits\n\
+• **Change:** $CHANGE %"
+
+          # Send to your webhook
+          curl -H "Content-Type: application/json" \
+               -d "{\"content\": \"$CONTENT\"}" \
+               https://discordapp.com/api/webhooks/1362638254439927859/MfZ5Nd8bs_KDLd2LZlGmzSfUVsBSSE1vkZEVF9K-5NQfIgk6ujUUO1SwZVi2AoFC-htP
