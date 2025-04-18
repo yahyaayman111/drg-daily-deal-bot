@@ -1,8 +1,10 @@
 name: DRG Daily Deal
 
 on:
+  workflow_dispatch:    # ← allows manual runs
   schedule:
-    - cron: '5 0 * * *'    # every day at 00:05 UTC
+    - cron: '5 0 * * *'
+
 
 jobs:
   post-deal:
