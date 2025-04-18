@@ -1,6 +1,6 @@
 name: DRG Daily Deal
 
-# Manual runs + daily at 00:05 UTC
+# Run manually + every day at 00:05 UTC
 on:
   workflow_dispatch:
   schedule:
@@ -14,18 +14,18 @@ jobs:
       - name: Fetch Today’s Deal JSON
         id: fetch
         run: |
-          # Get today's date in YYYY-MM-DD
+          # Get today's date in UTC (YYYY-MM-DD)
           DATE=$(date -u +'%Y-%m-%d')
           URL="https://doublexp.net/static/json/bulkmissions/${DATE}.json"
-          # Download the JSON
+          # Download the JSON content
           RESPONSE=$(curl -s $URL)
-          # Expose it to subsequent steps
+          # Store it in an environment variable
           echo "RESPONSE=$RESPONSE" >> $GITHUB_ENV
 
       - name: Parse Deal Fields
         id: parse
         run: |
-          # Extract the fields we need
+          # Extract fields using jq and save them to text files
           jq -r '.dailyDeal.DealType'     <<<"$RESPONSE" > deal_type.txt
           jq -r '.dailyDeal.ResourceAmount'<<<"$RESPONSE" > deal_amt.txt
           jq -r '.dailyDeal.Resource'     <<<"$RESPONSE" > deal_res.txt
@@ -34,21 +34,21 @@ jobs:
 
       - name: Post to Discord via curl
         run: |
-          # Read parsed values
+          # Read values from the text files
           read -r TYPE   < deal_type.txt
           read -r AMT    < deal_amt.txt
           read -r RES    < deal_res.txt
           read -r PRICE  < deal_price.txt
           read -r CHANGE < deal_chg.txt
 
-          # Build the message payload
+          # Build the message content
           CONTENT="**🎉 Deep Rock Galactic Daily Deal**\n\
 • **Type:** $TYPE\n\
 • **Offer:** $AMT × $RES\n\
-• **Price:** $PRICE credits\n\
-• **Change:** $CHANGE %"
+• **Price:** $PRICE credits\n\
+• **Change:** $CHANGE%"
 
-          # Send to your webhook
+          # Send the message to your Discord webhook
           curl -H "Content-Type: application/json" \
                -d "{\"content\": \"$CONTENT\"}" \
                https://discordapp.com/api/webhooks/1362638254439927859/MfZ5Nd8bs_KDLd2LZlGmzSfUVsBSSE1vkZEVF9K-5NQfIgk6ujUUO1SwZVi2AoFC-htP
