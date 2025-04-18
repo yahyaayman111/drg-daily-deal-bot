@@ -1,6 +1,6 @@
 name: DRG Daily Deal
 
-# Run manually + every day at 00:05 UTC
+# Run manually + daily at 00:05 UTC
 on:
   workflow_dispatch:
   schedule:
@@ -12,43 +12,34 @@ jobs:
 
     steps:
       - name: Fetch Today’s Deal JSON
-        id: fetch
         run: |
-          # Get today's date in UTC (YYYY-MM-DD)
           DATE=$(date -u +'%Y-%m-%d')
           URL="https://doublexp.net/static/json/bulkmissions/${DATE}.json"
-          # Download the JSON content
-          RESPONSE=$(curl -s $URL)
-          # Store it in an environment variable
-          echo "RESPONSE=$RESPONSE" >> $GITHUB_ENV
+          # Download and save JSON to a file
+          curl -s $URL -o deal.json
 
       - name: Parse Deal Fields
-        id: parse
         run: |
-          # Extract fields using jq and save them to text files
-          jq -r '.dailyDeal.DealType'     <<<"$RESPONSE" > deal_type.txt
-          jq -r '.dailyDeal.ResourceAmount'<<<"$RESPONSE" > deal_amt.txt
-          jq -r '.dailyDeal.Resource'     <<<"$RESPONSE" > deal_res.txt
-          jq -r '.dailyDeal.Credits'      <<<"$RESPONSE" > deal_price.txt
-          jq -r '.dailyDeal.ChangePercent'<<<"$RESPONSE" > deal_chg.txt
+          jq -r '.dailyDeal.DealType'      deal.json > deal_type.txt
+          jq -r '.dailyDeal.ResourceAmount' deal.json > deal_amt.txt
+          jq -r '.dailyDeal.Resource'      deal.json > deal_res.txt
+          jq -r '.dailyDeal.Credits'       deal.json > deal_price.txt
+          jq -r '.dailyDeal.ChangePercent' deal.json > deal_chg.txt
 
       - name: Post to Discord via curl
         run: |
-          # Read values from the text files
           read -r TYPE   < deal_type.txt
           read -r AMT    < deal_amt.txt
           read -r RES    < deal_res.txt
           read -r PRICE  < deal_price.txt
           read -r CHANGE < deal_chg.txt
 
-          # Build the message content
           CONTENT="**🎉 Deep Rock Galactic Daily Deal**\n\
 • **Type:** $TYPE\n\
-• **Offer:** $AMT × $RES\n\
+• **Offer:** $AMT × $RES\n\
 • **Price:** $PRICE credits\n\
 • **Change:** $CHANGE%"
 
-          # Send the message to your Discord webhook
           curl -H "Content-Type: application/json" \
                -d "{\"content\": \"$CONTENT\"}" \
                https://discordapp.com/api/webhooks/1362638254439927859/MfZ5Nd8bs_KDLd2LZlGmzSfUVsBSSE1vkZEVF9K-5NQfIgk6ujUUO1SwZVi2AoFC-htP
