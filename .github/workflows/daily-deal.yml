@@ -42,4 +42,3 @@ jobs:
           curl -H "Content-Type: application/json" \
                -d "{\"content\": \"$CONTENT\"}" \
                https://discordapp.com/api/webhooks/1362638254439927859/MfZ5Nd8bs_KDLd2LZlGmzSfUVsBSSE1vkZEVF9K-5NQfIgk6ujUUO1SwZVi2AoFC-htP
- 
